@@ -1,0 +1,52 @@
+package com.atguigu.daijia.driver.controller;
+
+import com.atguigu.daijia.common.login.MaYueLogin;
+import com.atguigu.daijia.common.result.Result;
+import com.atguigu.daijia.common.util.AuthContextHolder;
+import com.atguigu.daijia.driver.service.OrderService;
+import com.atguigu.daijia.model.vo.order.CurrentOrderInfoVo;
+import com.atguigu.daijia.model.vo.order.NewOrderDataVo;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@Slf4j
+@Tag(name = "订单API接口管理")
+@RestController
+@RequestMapping("/order")
+@SuppressWarnings({"unchecked", "rawtypes"})
+public class OrderController {
+
+    @Autowired
+    OrderService orderService;
+
+    @Operation(summary = "查询订单状态")
+    @MaYueLogin
+    @GetMapping("/getOrderStatus/{orderId}")
+    public Result<Integer> getOrderStatus(@PathVariable Long orderId) {
+        return Result.ok(orderService.getOrderStatus(orderId));
+    }
+
+    @Operation(summary = "查询司机新订单数据")
+    @MaYueLogin
+    @GetMapping("/findNewOrderQueueData")
+    public Result<List<NewOrderDataVo>> findNewOrderQueueData() {
+        Long driverId = AuthContextHolder.getUserId();
+        return Result.ok(orderService.findNewOrderQueueData(driverId));
+    }
+
+    //TODO 后续完善，当前默认司机没有正在进行的订单
+    @Operation(summary = "查找司机当前订单")
+    @MaYueLogin
+    @GetMapping("/searchDriverCurrentOrder")
+    public Result<CurrentOrderInfoVo> searchDriverCurrentOrder() {
+        CurrentOrderInfoVo currentOrderInfoVo = new CurrentOrderInfoVo();
+        currentOrderInfoVo.setIsHasCurrentOrder(false);
+        return Result.ok(currentOrderInfoVo);
+    }
+}
+
