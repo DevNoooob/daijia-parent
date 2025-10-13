@@ -67,7 +67,7 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
 
     @Override
     public Boolean robNewOrder(Long driverId, Long orderId) {
-
+        return null;
     }
 
     public void log(Long orderId, Integer orderStatus) {
