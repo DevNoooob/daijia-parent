@@ -35,6 +35,6 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public Boolean robNewOrder(Long driverId, Long orderId) {
-        return orderInfoFeignClient.robNewOrder(orderId, driverId).getData();
+        return orderInfoFeignClient.robNewOrder(driverId, orderId).getData();
     }
 }
