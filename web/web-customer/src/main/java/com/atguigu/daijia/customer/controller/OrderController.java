@@ -4,10 +4,12 @@ import com.atguigu.daijia.common.login.MaYueLogin;
 import com.atguigu.daijia.common.result.Result;
 import com.atguigu.daijia.common.util.AuthContextHolder;
 import com.atguigu.daijia.customer.service.OrderService;
+import com.atguigu.daijia.model.entity.order.OrderInfo;
 import com.atguigu.daijia.model.form.customer.ExpectOrderForm;
 import com.atguigu.daijia.model.form.customer.SubmitOrderForm;
 import com.atguigu.daijia.model.vo.customer.ExpectOrderVo;
 import com.atguigu.daijia.model.vo.order.CurrentOrderInfoVo;
+import com.atguigu.daijia.model.vo.order.OrderInfoVo;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
@@ -25,14 +27,13 @@ public class OrderController {
     @Autowired
     private OrderService orderService;
 
-    //TODO 后续完善，目前假设乘客没有订单
+
     @Operation(summary = "查找客户当前订单")
     @MaYueLogin
     @GetMapping("/searchCustomerCurrentOrder")
-    public Result<CurrentOrderInfoVo>  searchCustomerCurrentOrder() {
-        CurrentOrderInfoVo currentOrderInfoVo = new CurrentOrderInfoVo();
-        currentOrderInfoVo.setIsHasCurrentOrder(Boolean.FALSE);
-        return Result.ok(currentOrderInfoVo);
+    public Result<CurrentOrderInfoVo> searchCustomerCurrentOrder() {
+        Long customerId = AuthContextHolder.getUserId();
+        return Result.ok(orderService.searchCustomerCurrentOrder(customerId));
     }
 
     @Operation(summary = "预估订单数据")
@@ -55,6 +56,14 @@ public class OrderController {
     @GetMapping("getOrderStatus/{orderId}")
     public Result<Integer> getOrderStatus(@PathVariable("orderId") Long orderId) {
         return Result.ok(orderService.getOrderStatus(orderId));
+    }
+
+    @Operation(summary = "根据订单id获取订单信息")
+    @MaYueLogin
+    @GetMapping("/getOrderInfo/{orderId}")
+    public Result<OrderInfoVo> getOrderInfo(@PathVariable("orderId") Long orderId) {
+        Long customerId = AuthContextHolder.getUserId();
+        return Result.ok(orderService.getOrderInfo(orderId, customerId));
     }
 }
 
