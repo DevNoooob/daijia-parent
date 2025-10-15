@@ -5,6 +5,7 @@ import com.atguigu.daijia.common.result.Result;
 import com.atguigu.daijia.common.util.AuthContextHolder;
 import com.atguigu.daijia.driver.service.LocationService;
 import com.atguigu.daijia.model.form.map.UpdateDriverLocationForm;
+import com.atguigu.daijia.model.form.map.UpdateOrderLocationForm;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
@@ -39,5 +40,10 @@ public class LocationController {
         return Result.ok(locationService.removeDriverLocation(driverId));
     }
 
+    @Operation(summary = "司机赶往代驾起始点：更新订单位置到Redis缓存")
+    @MaYueLogin
+    @PostMapping("/updateOrderLocationToCache")
+    private Result<Boolean> updateOrderLocationToCache(@RequestBody UpdateOrderLocationForm updateOrderLocationForm){
+        return Result.ok(locationService.updateOrderLocationToCache(updateOrderLocationForm));
+    }
 }
-
