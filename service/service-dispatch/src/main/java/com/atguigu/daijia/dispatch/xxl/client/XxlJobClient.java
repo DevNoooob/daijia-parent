@@ -72,7 +72,7 @@ public class XxlJobClient {
         ResponseEntity<JSONObject> response = restTemplate.postForEntity(url, request, JSONObject.class);
         if(response.getStatusCode().value() == 200 && response.getBody().getIntValue("code") == 200) {
             log.info("启动xxl执行任务成功:{},返回信息:{}", jobId, response.getBody().toJSONString());
-            return true;
+            return Boolean.TRUE;
         }
         log.info("启动xxl执行任务失败:{},返回信息:{}", jobId, response.getBody().toJSONString());
         throw new GuiguException(ResultCodeEnum.DATA_ERROR);
@@ -90,7 +90,7 @@ public class XxlJobClient {
         ResponseEntity<JSONObject> response = restTemplate.postForEntity(url, request, JSONObject.class);
         if(response.getStatusCode().value() == 200 && response.getBody().getIntValue("code") == 200) {
             log.info("停止xxl执行任务成功:{},返回信息:{}", jobId, response.getBody().toJSONString());
-            return true;
+            return Boolean.TRUE;
         }
         log.info("停止xxl执行任务失败:{},返回信息:{}", jobId, response.getBody().toJSONString());
         throw new GuiguException(ResultCodeEnum.DATA_ERROR);
@@ -108,7 +108,7 @@ public class XxlJobClient {
         ResponseEntity<JSONObject> response = restTemplate.postForEntity(url, request, JSONObject.class);
         if(response.getStatusCode().value() == 200 && response.getBody().getIntValue("code") == 200) {
             log.info("删除xxl执行任务成功:{},返回信息:{}", jobId, response.getBody().toJSONString());
-            return true;
+            return Boolean.TRUE;
         }
         log.info("删除xxl执行任务失败:{},返回信息:{}", jobId, response.getBody().toJSONString());
         throw new GuiguException(ResultCodeEnum.DATA_ERROR);

@@ -6,9 +6,18 @@ import com.baomidou.mybatisplus.extension.service.IService;
 
 public interface OrderInfoService extends IService<OrderInfo> {
 
+    //乘客下单
     Long saveOrderInfo(OrderInfoForm orderInfoForm);
 
+    //根据订单id获取订单状态
     Integer getOrderStatus(Long orderId);
 
+    //司机抢单
+    //乐观锁解决并发问题
+    Boolean robNewOrderOptimisticLocking(Long driverId, Long orderId);
+
+
+    //Redisson分布式锁
+    //司机抢单
     Boolean robNewOrder(Long driverId, Long orderId);
 }
