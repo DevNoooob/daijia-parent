@@ -7,6 +7,7 @@ import com.atguigu.daijia.model.entity.order.OrderInfo;
 import com.atguigu.daijia.model.entity.order.OrderStatusLog;
 import com.atguigu.daijia.model.enums.OrderStatus;
 import com.atguigu.daijia.model.form.order.OrderInfoForm;
+import com.atguigu.daijia.model.form.order.UpdateOrderCartForm;
 import com.atguigu.daijia.model.vo.order.CurrentOrderInfoVo;
 import com.atguigu.daijia.order.mapper.OrderInfoMapper;
 import com.atguigu.daijia.order.mapper.OrderStatusLogMapper;
@@ -21,6 +22,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Date;
 import java.util.UUID;
@@ -207,6 +209,45 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
     @Override
     public OrderInfo getOrderInfo(Long orderId) {
         return orderInfoMapper.selectById(orderId);
+    }
+
+    @Override
+    public Boolean driverArriveStartLocation(Long orderId, Long driverId) {
+        //更新订单状态和司机到达时间，条件 ： orderId + driverId
+
+        int rows = orderInfoMapper.update(null, new LambdaUpdateWrapper<OrderInfo>()
+                .eq(OrderInfo::getId, orderId)
+                .eq(OrderInfo::getDriverId, driverId)
+                .set(OrderInfo::getStatus, OrderStatus.DRIVER_ARRIVED.getStatus())
+                .set(OrderInfo::getArriveTime, new Date())
+        );
+
+        if (rows == 1){
+            this.log(orderId,OrderStatus.DRIVER_ARRIVED.getStatus());
+        } else {
+            throw new GuiguException(ResultCodeEnum.UPDATE_ERROR);
+        }
+        return Boolean.TRUE;
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public Boolean updateOrderCart(UpdateOrderCartForm updateOrderCartForm) {
+        int rows = orderInfoMapper.update(null, new LambdaUpdateWrapper<OrderInfo>()
+                .eq(OrderInfo::getId, updateOrderCartForm.getOrderId())
+                .eq(OrderInfo::getDriverId, updateOrderCartForm.getDriverId())
+                .set(OrderInfo::getCarLicense, updateOrderCartForm.getCarLicense())
+                .set(OrderInfo::getCarType, updateOrderCartForm.getCarType())
+                .set(OrderInfo::getCarFrontUrl, updateOrderCartForm.getCarFrontUrl())
+                .set(OrderInfo::getCarBackUrl, updateOrderCartForm.getCarBackUrl())
+        );
+
+        if (rows == 1){
+            this.log(updateOrderCartForm.getOrderId(),OrderStatus.UPDATE_CART_INFO.getStatus());
+        }  else {
+            throw new GuiguException(ResultCodeEnum.UPDATE_ERROR);
+        }
+        return Boolean.TRUE;
     }
 
 
