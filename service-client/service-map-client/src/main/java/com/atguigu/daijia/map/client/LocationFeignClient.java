@@ -27,5 +27,5 @@ public interface LocationFeignClient {
     Result<Boolean> updateOrderLocationToCache(@RequestBody UpdateOrderLocationForm updateOrderLocationForm);
 
     @GetMapping("/map/location/getCacheOrderLocation/{orderId}")
-    Result<OrderLocationVo> getCacheOrderLocation(@PathVariable Long orderId);
+    Result<OrderLocationVo> getCacheOrderLocation(@PathVariable("orderId") Long orderId);
 }

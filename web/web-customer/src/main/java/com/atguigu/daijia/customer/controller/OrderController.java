@@ -55,7 +55,7 @@ public class OrderController {
         return Result.ok(orderService.submitOrder(submitOrderForm));
     }
 
-    @Operation(summary = "获取订单信息")
+    @Operation(summary = "获取订单状态")
     @MaYueLogin
     @GetMapping("getOrderStatus/{orderId}")
     public Result<Integer> getOrderStatus(@PathVariable("orderId") Long orderId) {

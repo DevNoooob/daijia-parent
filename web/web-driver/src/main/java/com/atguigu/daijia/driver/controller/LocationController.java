@@ -43,7 +43,7 @@ public class LocationController {
     @Operation(summary = "司机赶往代驾起始点：更新订单位置到Redis缓存")
     @MaYueLogin
     @PostMapping("/updateOrderLocationToCache")
-    private Result<Boolean> updateOrderLocationToCache(@RequestBody UpdateOrderLocationForm updateOrderLocationForm){
+    public Result<Boolean> updateOrderLocationToCache(@RequestBody UpdateOrderLocationForm updateOrderLocationForm){
         return Result.ok(locationService.updateOrderLocationToCache(updateOrderLocationForm));
     }
 }

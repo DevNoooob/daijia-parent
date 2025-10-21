@@ -140,7 +140,7 @@ public class OrderServiceImpl implements OrderService {
             throw new GuiguException(ResultCodeEnum.ILLEGAL_REQUEST);
         }
         OrderInfoVo orderInfoVo = new OrderInfoVo();
-        orderInfoVo.setOrderId(orderInfo.getId());
+        orderInfoVo.setOrderId(orderId);
         BeanUtils.copyProperties(orderInfo, orderInfoVo);
         return orderInfoVo;
     }

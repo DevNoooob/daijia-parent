@@ -3,6 +3,7 @@ package com.atguigu.daijia.order.controller;
 import com.atguigu.daijia.common.result.Result;
 import com.atguigu.daijia.model.entity.order.OrderInfo;
 import com.atguigu.daijia.model.form.order.OrderInfoForm;
+import com.atguigu.daijia.model.form.order.StartDriveForm;
 import com.atguigu.daijia.model.form.order.UpdateOrderCartForm;
 import com.atguigu.daijia.model.vo.order.CurrentOrderInfoVo;
 import com.atguigu.daijia.order.service.OrderInfoService;
@@ -36,7 +37,7 @@ public class OrderInfoController {
     @Operation(summary = "司机抢单")
     @GetMapping("/robNewOrder/{driverId}/{orderId}")
     public Result<Boolean> robNewOrder(@PathVariable("driverId") Long driverId, @PathVariable("orderId") Long orderId) {
-        return Result.ok(orderInfoService.robNewOrderOptimisticLocking(driverId, orderId));
+        return Result.ok(orderInfoService.robNewOrder(driverId, orderId));
     }
 
     @Operation(summary = "乘客端查找当前订单")
@@ -54,7 +55,7 @@ public class OrderInfoController {
     @Operation(summary = "根据订单id查找订单信息")
     @GetMapping("/getOrderInfo/{orderId}")
     public Result<OrderInfo> getOrderInfo(@PathVariable("orderId") Long orderId) {
-        return Result.ok(orderInfoService.getOrderInfo(orderId));
+        return Result.ok(orderInfoService.getById(orderId));
     }
 
     @Operation(summary = "司机到达起始点")
@@ -67,6 +68,12 @@ public class OrderInfoController {
     @PostMapping("/updateOrderCart")
     public Result<Boolean> updateOrderCart(@RequestBody UpdateOrderCartForm updateOrderCartForm) {
         return Result.ok(orderInfoService.updateOrderCart(updateOrderCartForm));
+    }
+
+    @Operation(summary = "开始代驾服务")
+    @PostMapping("/startDrive")
+    public Result<Boolean> startDriver(@RequestBody StartDriveForm startDriveForm) {
+        return Result.ok(orderInfoService.startDriver(startDriveForm));
     }
 }
 

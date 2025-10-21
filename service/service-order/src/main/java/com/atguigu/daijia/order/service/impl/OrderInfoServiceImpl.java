@@ -7,6 +7,7 @@ import com.atguigu.daijia.model.entity.order.OrderInfo;
 import com.atguigu.daijia.model.entity.order.OrderStatusLog;
 import com.atguigu.daijia.model.enums.OrderStatus;
 import com.atguigu.daijia.model.form.order.OrderInfoForm;
+import com.atguigu.daijia.model.form.order.StartDriveForm;
 import com.atguigu.daijia.model.form.order.UpdateOrderCartForm;
 import com.atguigu.daijia.model.vo.order.CurrentOrderInfoVo;
 import com.atguigu.daijia.order.mapper.OrderInfoMapper;
@@ -92,58 +93,53 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
     //司机抢单
     @Override
     public Boolean robNewOrder(Long driverId, Long orderId) {
-        String acceptMarkKey = RedisConstant.ORDER_ACCEPT_MARK + orderId;
-        String lockKey = RedisConstant.ROB_NEW_ORDER_LOCK + orderId;
-        RLock rLock = redissonClient.getLock(lockKey);
+        //判断订单是否存在，通过Redis，减少数据库压力
+        if (!redisTemplate.hasKey(RedisConstant.ORDER_ACCEPT_MARK)) {
+            //抢单失败
+            throw new GuiguException(ResultCodeEnum.COB_NEW_ORDER_FAIL);
+        }
+
+        //创建锁
+        RLock lock = redissonClient.getLock(RedisConstant.ROB_NEW_ORDER_LOCK + orderId);
 
         try {
-            // 1. 判断订单是否仍存在可接单标识
-            if (!redisTemplate.hasKey(acceptMarkKey)) {
-                throw new GuiguException(ResultCodeEnum.COB_NEW_ORDER_FAIL);
+            //获取锁
+            boolean flag = lock.tryLock(RedisConstant.ROB_NEW_ORDER_LOCK_WAIT_TIME, RedisConstant.ROB_NEW_ORDER_LOCK_LEASE_TIME, TimeUnit.SECONDS);
+            if (flag) {
+                if (!redisTemplate.hasKey(RedisConstant.ORDER_ACCEPT_MARK)) {
+                    //抢单失败
+                    throw new GuiguException(ResultCodeEnum.COB_NEW_ORDER_FAIL);
+                }
+                //司机抢单
+                //修改order_info表订单状态值2：已经接单 + 司机id + 司机接单时间
+                //修改条件：根据订单id
+                LambdaQueryWrapper<OrderInfo> wrapper = new LambdaQueryWrapper<>();
+                wrapper.eq(OrderInfo::getId, orderId);
+                OrderInfo orderInfo = orderInfoMapper.selectOne(wrapper);
+                //设置
+                orderInfo.setStatus(OrderStatus.ACCEPTED.getStatus());
+                orderInfo.setDriverId(driverId);
+                orderInfo.setAcceptTime(new Date());
+                //调用方法修改
+                int rows = orderInfoMapper.updateById(orderInfo);
+                if (rows != 1) {
+                    //抢单失败
+                    throw new GuiguException(ResultCodeEnum.COB_NEW_ORDER_FAIL);
+                }
+
+                //删除抢单标识
+                redisTemplate.delete(RedisConstant.ORDER_ACCEPT_MARK);
             }
-
-            // 2. 获取分布式锁（带等待与租约时间）
-            boolean locked = rLock.tryLock(
-                    RedisConstant.ROB_NEW_ORDER_LOCK_WAIT_TIME,
-                    RedisConstant.ROB_NEW_ORDER_LOCK_LEASE_TIME,
-                    TimeUnit.SECONDS
-            );
-
-            if (!locked) {
-                throw new GuiguException(ResultCodeEnum.COB_NEW_ORDER_FAIL);
-            }
-
-            // 3. 二次校验（防止并发时标识被删除）
-            if (!redisTemplate.hasKey(acceptMarkKey)) {
-                throw new GuiguException(ResultCodeEnum.COB_NEW_ORDER_FAIL);
-            }
-
-            // 4. 更新数据库状态：等待接单 -> 已接单
-            int rows = orderInfoMapper.update(null,
-                    new LambdaUpdateWrapper<OrderInfo>()
-                            .eq(OrderInfo::getId, orderId)
-                            .eq(OrderInfo::getStatus, OrderStatus.WAITING_ACCEPT.getStatus())
-                            .set(OrderInfo::getDriverId, driverId)
-                            .set(OrderInfo::getStatus, OrderStatus.ACCEPTED.getStatus())
-                            .set(OrderInfo::getAcceptTime, new Date()));
-
-            if (rows != 1) {
-                throw new GuiguException(ResultCodeEnum.COB_NEW_ORDER_FAIL);
-            }
-
-            // 5. 抢单成功，删除Redis抢单标识
-            redisTemplate.delete(acceptMarkKey);
-            return Boolean.TRUE;
-
         } catch (Exception e) {
-            log.error("司机抢单失败, driverId={}, orderId={}", driverId, orderId, e);
+            //抢单失败
             throw new GuiguException(ResultCodeEnum.COB_NEW_ORDER_FAIL);
         } finally {
-            // 6. 释放锁（确保只释放当前线程持有的锁）
-            if (rLock.isHeldByCurrentThread()) {
-                rLock.unlock();
+            //释放
+            if (lock.isLocked()) {
+                lock.unlock();
             }
         }
+        return true;
     }
 
     //乘客端查找当前订单
@@ -185,8 +181,7 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
                 OrderStatus.DRIVER_ARRIVED.getStatus(),
                 OrderStatus.UPDATE_CART_INFO.getStatus(),
                 OrderStatus.START_SERVICE.getStatus(),
-                OrderStatus.END_SERVICE.getStatus(),
-                OrderStatus.UNPAID.getStatus()
+                OrderStatus.END_SERVICE.getStatus()
         };
 
         OrderInfo orderInfo = orderInfoMapper.selectOne(new LambdaQueryWrapper<OrderInfo>()
@@ -206,10 +201,6 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
         return currentOrderInfoVo;
     }
 
-    @Override
-    public OrderInfo getOrderInfo(Long orderId) {
-        return orderInfoMapper.selectById(orderId);
-    }
 
     @Override
     public Boolean driverArriveStartLocation(Long orderId, Long driverId) {
@@ -222,32 +213,48 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
                 .set(OrderInfo::getArriveTime, new Date())
         );
 
-        if (rows == 1){
-            this.log(orderId,OrderStatus.DRIVER_ARRIVED.getStatus());
+        if (rows == 1) {
+            this.log(orderId, OrderStatus.DRIVER_ARRIVED.getStatus());
+            return true;
         } else {
             throw new GuiguException(ResultCodeEnum.UPDATE_ERROR);
         }
-        return Boolean.TRUE;
     }
 
     @Transactional(rollbackFor = Exception.class)
     @Override
     public Boolean updateOrderCart(UpdateOrderCartForm updateOrderCartForm) {
-        int rows = orderInfoMapper.update(null, new LambdaUpdateWrapper<OrderInfo>()
-                .eq(OrderInfo::getId, updateOrderCartForm.getOrderId())
-                .eq(OrderInfo::getDriverId, updateOrderCartForm.getDriverId())
-                .set(OrderInfo::getCarLicense, updateOrderCartForm.getCarLicense())
-                .set(OrderInfo::getCarType, updateOrderCartForm.getCarType())
-                .set(OrderInfo::getCarFrontUrl, updateOrderCartForm.getCarFrontUrl())
-                .set(OrderInfo::getCarBackUrl, updateOrderCartForm.getCarBackUrl())
-        );
+        LambdaQueryWrapper<OrderInfo> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(OrderInfo::getId, updateOrderCartForm.getOrderId());
+        wrapper.eq(OrderInfo::getDriverId, updateOrderCartForm.getDriverId());
 
-        if (rows == 1){
-            this.log(updateOrderCartForm.getOrderId(),OrderStatus.UPDATE_CART_INFO.getStatus());
-        }  else {
+        OrderInfo orderInfo = new OrderInfo();
+        BeanUtils.copyProperties(updateOrderCartForm, orderInfo);
+        orderInfo.setStatus(OrderStatus.UPDATE_CART_INFO.getStatus());
+
+        int rows = orderInfoMapper.update(orderInfo, wrapper);
+        if (rows == 1) {
+            return true;
+        } else {
             throw new GuiguException(ResultCodeEnum.UPDATE_ERROR);
         }
-        return Boolean.TRUE;
+    }
+
+    @Override
+    public Boolean startDriver(StartDriveForm startDriveForm) {
+
+
+        int rows = orderInfoMapper.update(null, new LambdaUpdateWrapper<OrderInfo>()
+                .eq(OrderInfo::getDriverId, startDriveForm.getDriverId())
+                .eq(OrderInfo::getOrderNo, startDriveForm.getOrderId())
+                .set(OrderInfo::getStatus, OrderStatus.START_SERVICE.getStatus())
+                .set(OrderInfo::getStartServiceTime, new Date())
+        );
+        if (rows == 1) {
+            return true;
+        } else {
+            throw new GuiguException(ResultCodeEnum.UPDATE_ERROR);
+        }
     }
 
 
