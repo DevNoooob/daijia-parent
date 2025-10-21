@@ -1,7 +1,11 @@
 package com.atguigu.daijia.order.client;
 
 import com.atguigu.daijia.common.result.Result;
+import com.atguigu.daijia.model.entity.order.OrderInfo;
 import com.atguigu.daijia.model.form.order.OrderInfoForm;
+import com.atguigu.daijia.model.form.order.StartDriveForm;
+import com.atguigu.daijia.model.form.order.UpdateOrderCartForm;
+import com.atguigu.daijia.model.vo.order.CurrentOrderInfoVo;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -36,4 +40,54 @@ public interface OrderInfoFeignClient {
      */
     @GetMapping("/order/info/robNewOrder/{driverId}/{orderId}")
     Result<Boolean> robNewOrder(@PathVariable("driverId") Long driverId, @PathVariable("orderId") Long orderId);
+
+    /**
+     * 查找乘客当前订单
+     * @param customerId
+     * @return
+     */
+    @GetMapping("/order/info/searchCustomerCurrentOrder/{customerId}")
+    Result<CurrentOrderInfoVo> searchCustomerCurrentOrder(@PathVariable("customerId") Long customerId);
+
+    /**
+     * 查找司机当前订单
+     * @param driverId
+     * @return
+     */
+    @GetMapping("/order/info/searchDriverCurrentOrder/{driverId}")
+    Result<CurrentOrderInfoVo> searchDriverCurrentOrder(@PathVariable("driverId") Long driverId);
+
+    /**
+     * 根据订单id获取详细订单信息
+     * @param orderId
+     * @return
+     */
+    @GetMapping("/order/info/getOrderInfo/{orderId}")
+    Result<OrderInfo> getOrderInfo(@PathVariable("orderId") Long orderId);
+
+    /**
+     * 司机到达起始点，更新订单状态
+     * @param orderId
+     * @param driverId
+     * @return
+     */
+    @GetMapping("/order/info/driverArriveStartLocation/{orderId}/{driverId}")
+    Result<Boolean> driverArriveStartLocation(@PathVariable("orderId") Long orderId, @PathVariable("driverId") Long driverId);
+
+
+    /**
+     * 更新代驾车辆信息
+     * @param updateOrderCartForm
+     * @return
+     */
+    @PostMapping("/order/info/updateOrderCart")
+    Result<Boolean> updateOrderCart(@RequestBody UpdateOrderCartForm updateOrderCartForm);
+
+    /**
+     * 司机开始代驾服务
+     * @param startDriveForm
+     * @return
+     */
+    @PostMapping("/order/info/startDriver")
+    Result<Boolean> startDriver(@RequestBody StartDriveForm startDriveForm);
 }
