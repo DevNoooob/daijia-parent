@@ -3,8 +3,8 @@ package com.atguigu.daijia.map.service.impl;
 import com.atguigu.daijia.common.constant.RedisConstant;
 import com.atguigu.daijia.common.constant.SystemConstant;
 import com.atguigu.daijia.common.execption.GuiguException;
-import com.atguigu.daijia.common.result.Result;
 import com.atguigu.daijia.common.result.ResultCodeEnum;
+import com.atguigu.daijia.common.util.LocationUtil;
 import com.atguigu.daijia.driver.client.DriverInfoFeignClient;
 import com.atguigu.daijia.map.repository.OrderServiceLocationRepository;
 import com.atguigu.daijia.map.service.LocationService;
@@ -17,6 +17,7 @@ import com.atguigu.daijia.model.form.map.UpdateOrderLocationForm;
 import com.atguigu.daijia.model.vo.map.NearByDriverVo;
 import com.atguigu.daijia.model.vo.map.OrderLocationVo;
 import com.atguigu.daijia.model.vo.map.OrderServiceLastLocationVo;
+import com.atguigu.daijia.order.client.OrderInfoFeignClient;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.types.ObjectId;
 import org.springframework.beans.BeanUtils;
@@ -48,6 +49,9 @@ public class LocationServiceImpl implements LocationService {
 
     @Autowired
     private DriverInfoFeignClient driverInfoFeignClient;
+
+    @Autowired
+    private OrderInfoFeignClient orderInfoFeignClient;
 
     @Autowired
     private OrderServiceLocationRepository orderServiceLocationRepository;
@@ -181,5 +185,43 @@ public class LocationServiceImpl implements LocationService {
         } else {
             throw new GuiguException(ResultCodeEnum.DATA_ERROR);
         }
+    }
+
+    @Override
+    public BigDecimal calculateOrderRealDistance(Long orderId) {
+        //1、根据订单id获取代驾订单位置信息，根据创建时间排序（升序）
+        //查询MongoDB
+        //第一种方式
+//        OrderServiceLocation orderServiceLocation = new OrderServiceLocation();
+//        orderServiceLocation.setOrderId(orderId);
+//        orderServiceLocationRepository.findAll(Example.of(orderServiceLocation),Sort.by(Sort.Direction.ASC, "createTime"));
+        //第二种方式
+        List<OrderServiceLocation> list =
+                orderServiceLocationRepository.findByOrderIdOrderByCreateTimeAsc(orderId);
+
+        //2、第一步查询返回订单的位置信息list集合
+        //把list集合遍历，得到每个位置信息，计算两个位置距离
+        //把计算所有距离相加操作
+        double totalDistance = 0;
+        if (!CollectionUtils.isEmpty(list)) {
+            for (int i = 0, size = list.size(); i < size; i++) {
+                OrderServiceLocation location1 = list.get(i);
+                OrderServiceLocation location2 = list.get(i + 1);
+
+                double distance = LocationUtil.getDistance(
+                        location1.getLatitude().doubleValue(), location1.getLongitude().doubleValue(),
+                        location2.getLatitude().doubleValue(), location2.getLongitude().doubleValue()
+                );
+                totalDistance += distance;
+            }
+        }
+
+        //TODO 为了测试，不好测试实际代驾距离，模拟数据 实际距离=预估距离+5km
+        if (totalDistance == 0) {
+            orderInfoFeignClient.getOrderInfo(orderId).getData().getExpectDistance().add(new BigDecimal(5));
+        }
+
+
+        return BigDecimal.valueOf(totalDistance);
     }
 }

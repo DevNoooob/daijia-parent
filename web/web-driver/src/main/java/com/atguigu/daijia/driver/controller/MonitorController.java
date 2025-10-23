@@ -28,5 +28,6 @@ public class MonitorController {
     public Result<Boolean> upload(@RequestParam("file") MultipartFile file, OrderMonitorForm orderMonitorForm) {
         return Result.ok(monitorService.upload(file,orderMonitorForm));
     }
+
 }
 

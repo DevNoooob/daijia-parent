@@ -21,8 +21,13 @@ rule "00:00:00-06:59:59  完成5单后 每单奖励5元"
         $rule是绑定变量名，可以任意命名，官方推荐$符号，定义了绑定变量名，可以在then部分操作fact对象*/
         $rule:RewardRuleRequest(startTime >= "00:00:00" && startTime <= "06:59:59" && orderNum > 5)
     then
-        rewardRuleResponse.setRewardAmount(new BigDecimal("5.0"));
-        System.out.println("00:00:00-06:59:59 奖励：" + rewardRuleResponse.getRewardAmount() + "元");
+        Long extraOrders = $rule.getOrderNum() - 5L;  // 注意 Long 运算
+        BigDecimal reward = new BigDecimal(extraOrders)
+            .multiply(new BigDecimal("5.0"))
+            .setScale(2, RoundingMode.HALF_UP);
+
+        rewardRuleResponse.setRewardAmount(reward);
+        System.out.println("凌晨奖励：" + reward + " 元（超出 " + extraOrders + " 单）");
 end
 rule "07:00:00-23:59:59  完成10单后 每单奖励2元"
     salience 10          //指定优先级，数值越大优先级越高，不指定的情况下由上到下执行
@@ -33,7 +38,12 @@ rule "07:00:00-23:59:59  完成10单后 每单奖励2元"
         $rule是绑定变量名，可以任意命名，官方推荐$符号，定义了绑定变量名，可以在then部分操作fact对象*/
         $rule:RewardRuleRequest(startTime >= "07:00:00" && startTime <= "23:59:59" && orderNum > 10)
     then
-        rewardRuleResponse.setRewardAmount(new BigDecimal("2.0"));
-        System.out.println("00:00:00-06:59:59 奖励：" + rewardRuleResponse.getRewardAmount() + "元");
+        Long extraOrders = $rule.getOrderNum() - 10L;
+        BigDecimal reward = new BigDecimal(extraOrders)
+            .multiply(new BigDecimal("2.0"))
+            .setScale(2, RoundingMode.HALF_UP);
+
+        rewardRuleResponse.setRewardAmount(reward);
+        System.out.println("白天奖励：" + reward + " 元（超出 " + extraOrders + " 单）");
 end
 
