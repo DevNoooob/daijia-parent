@@ -4,6 +4,7 @@ import com.atguigu.daijia.common.result.Result;
 import com.atguigu.daijia.model.entity.order.OrderInfo;
 import com.atguigu.daijia.model.form.order.OrderInfoForm;
 import com.atguigu.daijia.model.form.order.StartDriveForm;
+import com.atguigu.daijia.model.form.order.UpdateOrderBillForm;
 import com.atguigu.daijia.model.form.order.UpdateOrderCartForm;
 import com.atguigu.daijia.model.vo.order.CurrentOrderInfoVo;
 import com.atguigu.daijia.order.service.OrderInfoService;
@@ -74,6 +75,18 @@ public class OrderInfoController {
     @PostMapping("/startDrive")
     public Result<Boolean> startDriver(@RequestBody StartDriveForm startDriveForm) {
         return Result.ok(orderInfoService.startDriver(startDriveForm));
+    }
+
+    @Operation(summary = "根据时间段获取订单数")
+    @GetMapping("/getOrderNumByTime/{driverId}/{startTime}/{endtime}")
+    public Result<Long> getOrderNumByTime(@PathVariable("driverId") Long driverId, @PathVariable("startTime") String startTime, @PathVariable("endtime") String endtime) {
+        return Result.ok(orderInfoService.getOrderNumByTime(driverId, startTime, endtime));
+    }
+
+    @Operation(summary = "结束代驾服务更新订单账单")
+    @PostMapping("/endDrive")
+    public Result<Boolean> endDrive(@RequestBody UpdateOrderBillForm updateOrderBillForm) {
+        return Result.ok(orderInfoService.endDrive(updateOrderBillForm));
     }
 }
 
