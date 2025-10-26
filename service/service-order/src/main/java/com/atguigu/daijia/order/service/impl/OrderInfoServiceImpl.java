@@ -105,8 +105,10 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
     //司机抢单
     @Override
     public Boolean robNewOrder(Long driverId, Long orderId) {
+
+        String key = RedisConstant.ORDER_ACCEPT_MARK + orderId;
         //判断订单是否存在，通过Redis，减少数据库压力
-        if (!redisTemplate.hasKey(RedisConstant.ORDER_ACCEPT_MARK)) {
+        if (!redisTemplate.hasKey(key)) {
             //抢单失败
             throw new GuiguException(ResultCodeEnum.COB_NEW_ORDER_FAIL);
         }
@@ -116,9 +118,10 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
 
         try {
             //获取锁
-            boolean flag = lock.tryLock(RedisConstant.ROB_NEW_ORDER_LOCK_WAIT_TIME, RedisConstant.ROB_NEW_ORDER_LOCK_LEASE_TIME, TimeUnit.SECONDS);
+            boolean flag = lock.tryLock(RedisConstant.ROB_NEW_ORDER_LOCK_WAIT_TIME,
+                    RedisConstant.ROB_NEW_ORDER_LOCK_LEASE_TIME, TimeUnit.SECONDS);
             if (flag) {
-                if (!redisTemplate.hasKey(RedisConstant.ORDER_ACCEPT_MARK)) {
+                if (!redisTemplate.hasKey(key)) {
                     //抢单失败
                     throw new GuiguException(ResultCodeEnum.COB_NEW_ORDER_FAIL);
                 }
@@ -140,7 +143,7 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
                 }
 
                 //删除抢单标识
-                redisTemplate.delete(RedisConstant.ORDER_ACCEPT_MARK);
+                redisTemplate.delete(key);
             }
         } catch (Exception e) {
             //抢单失败
@@ -253,12 +256,12 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
     }
 
     @Override
-    public Boolean startDriver(StartDriveForm startDriveForm) {
+    public Boolean startDrive(StartDriveForm startDriveForm) {
 
 
         int rows = orderInfoMapper.update(null, new LambdaUpdateWrapper<OrderInfo>()
                 .eq(OrderInfo::getDriverId, startDriveForm.getDriverId())
-                .eq(OrderInfo::getOrderNo, startDriveForm.getOrderId())
+                .eq(OrderInfo::getId, startDriveForm.getOrderId())
                 .set(OrderInfo::getStatus, OrderStatus.START_SERVICE.getStatus())
                 .set(OrderInfo::getStartServiceTime, new Date())
         );

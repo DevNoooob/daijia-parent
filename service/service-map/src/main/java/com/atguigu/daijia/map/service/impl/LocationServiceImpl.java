@@ -172,7 +172,7 @@ public class LocationServiceImpl implements LocationService {
     public OrderServiceLastLocationVo getOrderServiceLastLocation(Long orderId) {
 
         Query query = new Query();
-        query.addCriteria(Criteria.where("orderId").is(orderId));
+        query.addCriteria(Criteria.where("orderId").is(orderId.longValue()));
         query.with(Sort.by(Sort.Direction.DESC, "createTime"));
         query.limit(1);
 
@@ -202,25 +202,27 @@ public class LocationServiceImpl implements LocationService {
         //2、第一步查询返回订单的位置信息list集合
         //把list集合遍历，得到每个位置信息，计算两个位置距离
         //把计算所有距离相加操作
-        double totalDistance = 0;
-        if (!CollectionUtils.isEmpty(list)) {
-            for (int i = 0, size = list.size(); i < size; i++) {
-                OrderServiceLocation location1 = list.get(i);
-                OrderServiceLocation location2 = list.get(i + 1);
+        double totalDistance = 0.0;
+        for (int i = 0, size = list.size(); i < size - 1; i++) {
+            OrderServiceLocation location1 = list.get(i);
+            OrderServiceLocation location2 = list.get(i + 1);
 
-                double distance = LocationUtil.getDistance(
-                        location1.getLatitude().doubleValue(), location1.getLongitude().doubleValue(),
-                        location2.getLatitude().doubleValue(), location2.getLongitude().doubleValue()
-                );
-                totalDistance += distance;
-            }
+            double distance = LocationUtil.getDistance(
+                    location1.getLatitude().doubleValue(), location1.getLongitude().doubleValue(),
+                    location2.getLatitude().doubleValue(), location2.getLongitude().doubleValue()
+            );
+            totalDistance += distance;
         }
+
 
         //TODO 为了测试，不好测试实际代驾距离，模拟数据 实际距离=预估距离+5km
         if (totalDistance == 0) {
-            orderInfoFeignClient.getOrderInfo(orderId).getData().getExpectDistance().add(new BigDecimal(5));
+            totalDistance = orderInfoFeignClient.getOrderInfo(orderId)
+                    .getData()
+                    .getExpectDistance()
+                    .add(new BigDecimal(5))
+                    .doubleValue();
         }
-
 
         return BigDecimal.valueOf(totalDistance);
     }

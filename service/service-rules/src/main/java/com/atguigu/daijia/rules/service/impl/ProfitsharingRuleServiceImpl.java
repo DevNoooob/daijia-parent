@@ -43,6 +43,7 @@ public class ProfitsharingRuleServiceImpl implements ProfitsharingRuleService {
         kieSession.dispose();
 
         ProfitsharingRuleResponseVo profitsharingRuleResponseVo = new ProfitsharingRuleResponseVo();
+        profitsharingRuleResponseVo.setProfitsharingRuleId(1L);
         BeanUtils.copyProperties(profitsharingRuleResponse, profitsharingRuleResponseVo);
 
         return profitsharingRuleResponseVo;

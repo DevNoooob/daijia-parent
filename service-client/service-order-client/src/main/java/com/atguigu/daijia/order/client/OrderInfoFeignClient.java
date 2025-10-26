@@ -89,8 +89,8 @@ public interface OrderInfoFeignClient {
      * @param startDriveForm
      * @return
      */
-    @PostMapping("/order/info/startDriver")
-    Result<Boolean> startDriver(@RequestBody StartDriveForm startDriveForm);
+    @PostMapping("/order/info/startDrive")
+    Result<Boolean> startDrive(@RequestBody StartDriveForm startDriveForm);
 
     /**
      * 根据时间段获取订单数

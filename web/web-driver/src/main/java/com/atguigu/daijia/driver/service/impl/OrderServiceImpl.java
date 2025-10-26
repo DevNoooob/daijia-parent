@@ -1,8 +1,10 @@
 package com.atguigu.daijia.driver.service.impl;
 
+import com.atguigu.daijia.common.constant.SystemConstant;
 import com.atguigu.daijia.common.execption.GuiguException;
 import com.atguigu.daijia.common.result.Result;
 import com.atguigu.daijia.common.result.ResultCodeEnum;
+import com.atguigu.daijia.common.util.LocationUtil;
 import com.atguigu.daijia.dispatch.client.NewOrderFeignClient;
 import com.atguigu.daijia.driver.service.OrderService;
 import com.atguigu.daijia.map.client.LocationFeignClient;
@@ -17,6 +19,8 @@ import com.atguigu.daijia.model.form.rules.FeeRuleRequestForm;
 import com.atguigu.daijia.model.form.rules.ProfitsharingRuleRequestForm;
 import com.atguigu.daijia.model.form.rules.RewardRuleRequestForm;
 import com.atguigu.daijia.model.vo.map.DrivingLineVo;
+import com.atguigu.daijia.model.vo.map.OrderLocationVo;
+import com.atguigu.daijia.model.vo.map.OrderServiceLastLocationVo;
 import com.atguigu.daijia.model.vo.order.CurrentOrderInfoVo;
 import com.atguigu.daijia.model.vo.order.NewOrderDataVo;
 import com.atguigu.daijia.model.vo.order.OrderInfoVo;
@@ -108,6 +112,19 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public Boolean driverArriveStartLocation(Long orderId, Long driverId) {
+        OrderInfo orderInfo = orderInfoFeignClient.getOrderInfo(orderId).getData();
+        if (!orderInfo.getDriverId().equals(driverId)) {
+            throw new GuiguException(ResultCodeEnum.ILLEGAL_REQUEST);
+        }
+        OrderLocationVo orderLocationVo = locationFeignClient.getCacheOrderLocation(orderId).getData();
+        double distance = LocationUtil.getDistance(
+                orderInfo.getStartPointLatitude().doubleValue(),
+                orderInfo.getStartPointLongitude().doubleValue(),
+                orderLocationVo.getLatitude().doubleValue(),
+                orderLocationVo.getLongitude().doubleValue());
+        if (distance > SystemConstant.DRIVER_START_LOCATION_DISTION) {
+            throw new GuiguException(ResultCodeEnum.DRIVER_START_LOCATION_DISTION_ERROR);
+        }
         return orderInfoFeignClient.driverArriveStartLocation(orderId, driverId).getData();
     }
 
@@ -117,8 +134,8 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public Boolean startDriver(StartDriveForm startDriveForm) {
-        return orderInfoFeignClient.startDriver(startDriveForm).getData();
+    public Boolean startDrive(StartDriveForm startDriveForm) {
+        return orderInfoFeignClient.startDrive(startDriveForm).getData();
     }
 
     @Override
@@ -129,15 +146,28 @@ public class OrderServiceImpl implements OrderService {
             throw new GuiguException(ResultCodeEnum.ILLEGAL_REQUEST);
         }
 
+        //防止刷单
+        OrderServiceLastLocationVo orderServiceLastLocationVo =
+                locationFeignClient.getOrderServiceLastLocation(orderFeeForm.getOrderId()).getData();
+        double distance = LocationUtil.getDistance(
+                orderInfo.getStartPointLatitude().doubleValue(),
+                orderInfo.getStartPointLongitude().doubleValue(),
+                orderServiceLastLocationVo.getLatitude().doubleValue(),
+                orderServiceLastLocationVo.getLongitude().doubleValue());
+        if (distance > SystemConstant.DRIVER_END_LOCATION_DISTION) {
+            throw new GuiguException(ResultCodeEnum.DRIVER_END_LOCATION_DISTION_ERROR);
+        }
+
         //2、计算订单实际里程
-        BigDecimal realDistance = locationFeignClient.calculateOrderRealDistance(orderFeeForm.getOrderId()).getData();
+        BigDecimal realDistance =
+                locationFeignClient.calculateOrderRealDistance(orderFeeForm.getOrderId()).getData();
 
         //3、计算代驾实际费用
         FeeRuleRequestForm feeRuleRequestForm = new FeeRuleRequestForm();
         feeRuleRequestForm.setDistance(realDistance);
         feeRuleRequestForm.setStartTime(orderInfo.getStartServiceTime());
         feeRuleRequestForm.setWaitMinute(
-                (int)TimeUnit.MILLISECONDS.toMinutes(
+                (int) TimeUnit.MILLISECONDS.toMinutes(
                         orderInfo.getStartServiceTime().getTime() - orderInfo.getArriveTime().getTime()
                 )
         );
@@ -154,10 +184,10 @@ public class OrderServiceImpl implements OrderService {
         //4、计算系统奖励
 
         Date startServiceTime = orderInfo.getStartServiceTime();
-        String startTime = new DateTime(startServiceTime).toString("yyyy-MM-dd" )+ "00:00:00";
-        String endTime = new DateTime(startServiceTime).toString("yyyy-MM-dd") + "24:00:00";
+        String startTime = new DateTime(startServiceTime).toString("yyyy-MM-dd") + " 00:00:00";
+        String endTime = new DateTime(startServiceTime).toString("yyyy-MM-dd") + " 24:00:00";
         Long orderNum =
-                orderInfoFeignClient.getOrderNumByTime(orderInfo.getDriverId() ,startTime, endTime).getData();
+                orderInfoFeignClient.getOrderNumByTime(orderInfo.getDriverId(), startTime, endTime).getData();
 
         RewardRuleRequestForm rewardRuleRequestForm = new RewardRuleRequestForm();
         rewardRuleRequestForm.setOrderNum(orderNum);

@@ -10,6 +10,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 @FeignClient(value = "service-rules")
 public interface ProfitsharingRuleFeignClient {
 
-    @PostMapping("/calculateOrderProfitsharingFee")
+    @PostMapping("/rules/profitsharing/calculateOrderProfitsharingFee")
     Result<ProfitsharingRuleResponseVo> calculateOrderProfitSharingFee(@RequestBody ProfitsharingRuleRequestForm profitsharingRuleRequestForm);
 }

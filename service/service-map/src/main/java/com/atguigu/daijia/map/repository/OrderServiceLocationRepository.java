@@ -8,5 +8,5 @@ import java.util.List;
 
 @Repository
 public interface OrderServiceLocationRepository extends MongoRepository<OrderServiceLocation, String> {
-    public List<OrderServiceLocation> findByOrderIdOrderByCreateTimeAsc(Long orderId);
+    List<OrderServiceLocation> findByOrderIdOrderByCreateTimeAsc(Long orderId);
 }

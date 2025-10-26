@@ -73,8 +73,8 @@ public class OrderInfoController {
 
     @Operation(summary = "开始代驾服务")
     @PostMapping("/startDrive")
-    public Result<Boolean> startDriver(@RequestBody StartDriveForm startDriveForm) {
-        return Result.ok(orderInfoService.startDriver(startDriveForm));
+    public Result<Boolean> startDrive(@RequestBody StartDriveForm startDriveForm) {
+        return Result.ok(orderInfoService.startDrive(startDriveForm));
     }
 
     @Operation(summary = "根据时间段获取订单数")

@@ -96,11 +96,11 @@ public class OrderController {
 
     @Operation(summary = "开始代驾服务")
     @MaYueLogin
-    @PostMapping("/startDriver")
-    public Result<Boolean> startDriver(@RequestBody StartDriveForm startDriveForm) {
+    @PostMapping("/startDrive")
+    public Result<Boolean> startDrive(@RequestBody StartDriveForm startDriveForm) {
         Long driverId = AuthContextHolder.getUserId();
         startDriveForm.setDriverId(driverId);
-        return Result.ok(orderService.startDriver(startDriveForm));
+        return Result.ok(orderService.startDrive(startDriveForm));
     }
 
     @Operation(summary = "结束代驾服务更新订单账单")
