@@ -62,7 +62,7 @@ public class RewardRuleServiceImpl implements RewardRuleService {
         //封装VO对象
         RewardRuleResponseVo rewardRuleResponseVo = new RewardRuleResponseVo();
         rewardRuleResponseVo.setRewardAmount(rewardRuleResponse.getRewardAmount());
+        rewardRuleResponseVo.setRewardRuleId(1L);
         return rewardRuleResponseVo;
-
     }
 }

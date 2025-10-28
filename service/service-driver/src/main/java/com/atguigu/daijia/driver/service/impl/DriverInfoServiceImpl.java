@@ -332,4 +332,14 @@ public class DriverInfoServiceImpl extends ServiceImpl<DriverInfoMapper, DriverI
 
         return driverInfoVo;
     }
+
+    @Override
+    public String getDriverOpenId(Long driverId) {
+        DriverInfo driverInfo = driverInfoMapper.selectOne(new LambdaQueryWrapper<DriverInfo>().eq(DriverInfo::getId, driverId));
+        if (driverInfo == null) {
+            throw new GuiguException(ResultCodeEnum.DATA_ERROR);
+        } else {
+            return driverInfo.getWxOpenId();
+        }
+    }
 }

@@ -54,6 +54,7 @@ public interface DriverInfoFeignClient {
 
     /**
      * 创建司机人脸模型
+     *
      * @param driverFaceModelForm
      * @return
      */
@@ -62,6 +63,7 @@ public interface DriverInfoFeignClient {
 
     /**
      * 获取司机个性化设置
+     *
      * @param driverId
      * @return
      */
@@ -70,6 +72,7 @@ public interface DriverInfoFeignClient {
 
     /**
      * 判断司机当日是否进行过人脸识别
+     *
      * @param driverId
      * @return
      */
@@ -78,6 +81,7 @@ public interface DriverInfoFeignClient {
 
     /**
      * 司机人脸识别
+     *
      * @param driverFaceModelForm
      * @return
      */
@@ -86,6 +90,7 @@ public interface DriverInfoFeignClient {
 
     /**
      * 更新接单状态
+     *
      * @param driverId
      * @param status
      * @return
@@ -95,9 +100,19 @@ public interface DriverInfoFeignClient {
 
     /**
      * 获取司机基本信息
+     *
      * @param driverId
      * @return
      */
     @GetMapping("/driver/info/getDriverInfo/{driverId}")
     Result<DriverInfoVo> getDriverInfo(@PathVariable("driverId") Long driverId);
+
+    /**
+     * 根据id获取司机的OpenId
+     *
+     * @param driverId
+     * @return
+     */
+    @GetMapping("/driver/info/getDriverOpenId/{driverId}")
+    Result<String> getDriverOpenId(@PathVariable("driverId") Long driverId);
 }

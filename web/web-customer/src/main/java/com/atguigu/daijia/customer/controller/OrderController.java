@@ -8,6 +8,7 @@ import com.atguigu.daijia.model.entity.order.OrderInfo;
 import com.atguigu.daijia.model.form.customer.ExpectOrderForm;
 import com.atguigu.daijia.model.form.customer.SubmitOrderForm;
 import com.atguigu.daijia.model.form.map.CalculateDrivingLineForm;
+import com.atguigu.daijia.model.form.payment.CreateWxPaymentForm;
 import com.atguigu.daijia.model.vo.base.PageVo;
 import com.atguigu.daijia.model.vo.customer.ExpectOrderVo;
 import com.atguigu.daijia.model.vo.driver.DriverInfoVo;
@@ -16,6 +17,7 @@ import com.atguigu.daijia.model.vo.map.OrderLocationVo;
 import com.atguigu.daijia.model.vo.map.OrderServiceLastLocationVo;
 import com.atguigu.daijia.model.vo.order.CurrentOrderInfoVo;
 import com.atguigu.daijia.model.vo.order.OrderInfoVo;
+import com.atguigu.daijia.model.vo.payment.WxPrepayVo;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
@@ -107,6 +109,16 @@ public class OrderController {
     public Result<PageVo> findCustomerOrderPage(@PathVariable("page") Long page, @PathVariable("limit") Long limit) {
         Long customerId = AuthContextHolder.getUserId();
         return Result.ok(orderService.findCustomerOrderPage(customerId, page, limit));
+    }
+
+    @Operation(summary = "创建微信支付")
+    @MaYueLogin
+    @PostMapping("/createWxPayment")
+    public Result<WxPrepayVo> createWxPayment(@RequestBody CreateWxPaymentForm createWxPaymentForm) {
+        Long customerId = AuthContextHolder.getUserId();
+        createWxPaymentForm.setCustomerId(customerId);
+        return Result.ok(orderService.createWxPayment(createWxPaymentForm));
+
     }
 }
 

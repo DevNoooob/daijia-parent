@@ -10,6 +10,7 @@ import com.atguigu.daijia.driver.service.OrderService;
 import com.atguigu.daijia.map.client.LocationFeignClient;
 import com.atguigu.daijia.map.client.MapFeignClient;
 import com.atguigu.daijia.model.entity.order.OrderInfo;
+import com.atguigu.daijia.model.enums.OrderStatus;
 import com.atguigu.daijia.model.form.map.CalculateDrivingLineForm;
 import com.atguigu.daijia.model.form.order.OrderFeeForm;
 import com.atguigu.daijia.model.form.order.StartDriveForm;
@@ -22,9 +23,7 @@ import com.atguigu.daijia.model.vo.base.PageVo;
 import com.atguigu.daijia.model.vo.map.DrivingLineVo;
 import com.atguigu.daijia.model.vo.map.OrderLocationVo;
 import com.atguigu.daijia.model.vo.map.OrderServiceLastLocationVo;
-import com.atguigu.daijia.model.vo.order.CurrentOrderInfoVo;
-import com.atguigu.daijia.model.vo.order.NewOrderDataVo;
-import com.atguigu.daijia.model.vo.order.OrderInfoVo;
+import com.atguigu.daijia.model.vo.order.*;
 import com.atguigu.daijia.model.vo.rules.FeeRuleResponseVo;
 import com.atguigu.daijia.model.vo.rules.ProfitsharingRuleResponseVo;
 import com.atguigu.daijia.model.vo.rules.RewardRuleResponseVo;
@@ -103,6 +102,16 @@ public class OrderServiceImpl implements OrderService {
 
         OrderInfoVo orderInfoVo = new OrderInfoVo();
         orderInfoVo.setOrderId(orderId);
+
+        //判断
+        if (orderInfo.getStatus() >= OrderStatus.END_SERVICE.getStatus()) {
+            //获取账单和分账数据，封装到vo
+            OrderBillVo orderBillVo = orderInfoFeignClient.getOrderBillInfo(orderId).getData();
+            OrderProfitsharingVo orderProfitsharingVo = orderInfoFeignClient.getOrderProfitsharing(orderId).getData();
+            orderInfoVo.setOrderBillVo(orderBillVo);
+            orderInfoVo.setOrderProfitsharingVo(orderProfitsharingVo);
+        }
+
         BeanUtils.copyProperties(orderInfo, orderInfoVo);
         return orderInfoVo;
     }
@@ -187,7 +196,7 @@ public class OrderServiceImpl implements OrderService {
 
         Date startServiceTime = orderInfo.getStartServiceTime();
         String startTime = new DateTime(startServiceTime).toString("yyyy-MM-dd") + " 00:00:00";
-        String endTime = new DateTime(startServiceTime).toString("yyyy-MM-dd") + " 24:00:00";
+        String endTime = new DateTime(startServiceTime).plusDays(1).toString("yyyy-MM-dd") + " 00:00:00";
         Long orderNum =
                 orderInfoFeignClient.getOrderNumByTime(orderInfo.getDriverId(), startTime, endTime).getData();
 
@@ -234,6 +243,11 @@ public class OrderServiceImpl implements OrderService {
         return orderInfoFeignClient.findDriverOrderPage(driverId, page, limit).getData();
     }
 
+    @Override
+    public Boolean sendOrderBillInfo(Long orderId, Long driverId) {
+        return orderInfoFeignClient.sendOrderBillInfo(orderId, driverId).getData();
+    }
+
 
     //使用多线程
     @SneakyThrows
@@ -274,26 +288,26 @@ public class OrderServiceImpl implements OrderService {
 
         CompletableFuture<FeeRuleResponseVo> feeRuleResponseVoCompletableFuture =
                 realDistanceCompletableFuture.thenApplyAsync((realDistance) -> {
-            //3、计算代驾实际费用
-            FeeRuleRequestForm feeRuleRequestForm = new FeeRuleRequestForm();
-            feeRuleRequestForm.setDistance(realDistance);
-            feeRuleRequestForm.setStartTime(orderInfo.getStartServiceTime());
-            feeRuleRequestForm.setWaitMinute(
-                    (int) TimeUnit.MILLISECONDS.toMinutes(
-                            orderInfo.getStartServiceTime().getTime() - orderInfo.getArriveTime().getTime()
-                    )
-            );
-            FeeRuleResponseVo feeRuleResponseVo =
-                    feeRuleFeignClient.calculateOrderFee(feeRuleRequestForm).getData();
-            BigDecimal totalAmount =
-                    feeRuleResponseVo.getTotalAmount()
-                            .add(orderFeeForm.getTollFee())
-                            .add(orderFeeForm.getParkingFee())
-                            .add(orderFeeForm.getOtherFee())
-                            .add(orderInfo.getFavourFee());
-            feeRuleResponseVo.setTotalAmount(totalAmount);
-            return feeRuleResponseVo;
-        });
+                    //3、计算代驾实际费用
+                    FeeRuleRequestForm feeRuleRequestForm = new FeeRuleRequestForm();
+                    feeRuleRequestForm.setDistance(realDistance);
+                    feeRuleRequestForm.setStartTime(orderInfo.getStartServiceTime());
+                    feeRuleRequestForm.setWaitMinute(
+                            (int) TimeUnit.MILLISECONDS.toMinutes(
+                                    orderInfo.getStartServiceTime().getTime() - orderInfo.getArriveTime().getTime()
+                            )
+                    );
+                    FeeRuleResponseVo feeRuleResponseVo =
+                            feeRuleFeignClient.calculateOrderFee(feeRuleRequestForm).getData();
+                    BigDecimal totalAmount =
+                            feeRuleResponseVo.getTotalAmount()
+                                    .add(orderFeeForm.getTollFee())
+                                    .add(orderFeeForm.getParkingFee())
+                                    .add(orderFeeForm.getOtherFee())
+                                    .add(orderInfo.getFavourFee());
+                    feeRuleResponseVo.setTotalAmount(totalAmount);
+                    return feeRuleResponseVo;
+                });
         //4、计算系统奖励
         CompletableFuture<Long> orderNumCompletableFuture = CompletableFuture.supplyAsync(() -> {
             Date startServiceTime = orderInfo.getStartServiceTime();

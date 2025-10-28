@@ -53,18 +53,6 @@ public class CustomerController {
 
     }
 
-//    /*@Operation(summary = "获取客户登录信息")
-//    @GetMapping("/getCustomerLoginInfo")
-//    public Result<CustomerLoginVo> getCustomerLoginInfo(@RequestHeader(value = "token") String token) {
-//        //1、从请求头获取token字符串
-//        *//*1.1 public Result<CustomerLoginVo> getCustomerLoginInfo(HttpServletRequest request)
-//        String token = request.getHeader("token");*//*
-//
-//        //调用service实现
-//        //5、返回用户信息
-//        return Result.ok(customerService.getCustomerLoginInfo(token));
-//
-//    }*/
 
     @Operation(summary = "更新用户微信手机号")
     @MaYueLogin
@@ -73,5 +61,7 @@ public class CustomerController {
         updateWxPhoneForm.setCustomerId(AuthContextHolder.getUserId());
         return Result.ok(customerService.updateWxPhoneNumber(updateWxPhoneForm));
     }
+
+
 }
 

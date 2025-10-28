@@ -114,5 +114,15 @@ public class CustomerInfoServiceImpl extends ServiceImpl<CustomerInfoMapper, Cus
         }
     }
 
+    @Override
+    public String getCustomerOpenId(Long customerId) {
+        CustomerInfo customerInfo = customerInfoMapper.selectOne(new LambdaQueryWrapper<CustomerInfo>().eq(CustomerInfo::getId, customerId));
+        if (customerInfo == null) {
+            throw new GuiguException(ResultCodeEnum.DATA_ERROR);
+        } else {
+            return customerInfo.getWxOpenId();
+        }
+    }
+
 
 }

@@ -116,9 +116,17 @@ public class OrderController {
     @Operation(summary = "司机获取订单分页信息")
     @MaYueLogin
     @GetMapping("/findDriverOrderPage/{page}/{limit}")
-    public Result<PageVo> findDriverOrderPage(@PathVariable("page") Long page, @PathVariable("limit") Long limit){
+    public Result<PageVo> findDriverOrderPage(@PathVariable("page") Long page, @PathVariable("limit") Long limit) {
         Long driverId = AuthContextHolder.getUserId();
         return Result.ok(orderService.findDriverOrderPage(driverId, page, limit));
+    }
+
+    @Operation(summary = "司机发送账单信息")
+    @MaYueLogin
+    @GetMapping("/sendOrderBillInfo/{orderId}")
+    public Result<Boolean> sendOrderBillInfo(@PathVariable("orderId") Long orderId) {
+        Long driverId = AuthContextHolder.getUserId();
+        return Result.ok(orderService.sendOrderBillInfo(orderId, driverId));
     }
 }
 

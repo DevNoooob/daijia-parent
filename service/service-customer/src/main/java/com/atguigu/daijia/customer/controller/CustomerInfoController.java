@@ -44,5 +44,11 @@ public class CustomerInfoController {
     public Result<Boolean> updateWxPhoneNumber(@RequestBody UpdateWxPhoneForm updateWxPhoneForm) {
         return Result.ok(customerInfoService.updateWxPhoneNumber(updateWxPhoneForm));
     }
+
+    @Operation(summary = "获取乘客openId")
+    @GetMapping("/getCustomerOpenId/{customerId}")
+    public Result<String> getCustomerOpenId(@PathVariable Long customerId) {
+        return Result.ok(customerInfoService.getCustomerOpenId(customerId));
+    }
 }
 

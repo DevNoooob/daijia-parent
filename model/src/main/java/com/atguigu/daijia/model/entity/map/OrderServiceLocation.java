@@ -10,7 +10,7 @@ import java.util.Date;
 
 @Data
 @Schema(description = "订单代驾服务位置")
-@Document
+@Document("orderServiceLocation")
 public class OrderServiceLocation {
 
 	@Schema(description = "id")

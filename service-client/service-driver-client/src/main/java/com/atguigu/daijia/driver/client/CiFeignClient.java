@@ -5,6 +5,7 @@ import com.atguigu.daijia.model.vo.order.TextAuditingVo;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @FeignClient(value = "service-driver")
 public interface CiFeignClient {
@@ -15,5 +16,5 @@ public interface CiFeignClient {
      * @return TextAuditingVo
      */
     @PostMapping("/ci/textAuditing")
-    Result<TextAuditingVo> textAuditing(@RequestBody String content);
+    Result<TextAuditingVo> textAuditing(@RequestParam("content") String content);
 }

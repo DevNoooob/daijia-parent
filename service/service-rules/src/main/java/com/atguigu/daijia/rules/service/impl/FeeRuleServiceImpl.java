@@ -46,6 +46,7 @@ public class FeeRuleServiceImpl implements FeeRuleService {
         //封装数据到FeeRuleResponseVo返回
         FeeRuleResponseVo feeRuleResponseVo = new FeeRuleResponseVo();
         BeanUtils.copyProperties(feeRuleResponse, feeRuleResponseVo);
+        feeRuleResponseVo.setFeeRuleId(1L);
 
         return feeRuleResponseVo;
     }

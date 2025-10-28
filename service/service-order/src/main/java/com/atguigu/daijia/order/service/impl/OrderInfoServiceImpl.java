@@ -10,8 +10,7 @@ import com.atguigu.daijia.model.form.order.StartDriveForm;
 import com.atguigu.daijia.model.form.order.UpdateOrderBillForm;
 import com.atguigu.daijia.model.form.order.UpdateOrderCartForm;
 import com.atguigu.daijia.model.vo.base.PageVo;
-import com.atguigu.daijia.model.vo.order.CurrentOrderInfoVo;
-import com.atguigu.daijia.model.vo.order.OrderListVo;
+import com.atguigu.daijia.model.vo.order.*;
 import com.atguigu.daijia.order.mapper.OrderBillMapper;
 import com.atguigu.daijia.order.mapper.OrderInfoMapper;
 import com.atguigu.daijia.order.mapper.OrderProfitsharingMapper;
@@ -281,14 +280,16 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
     }
 
     @Override
-    public Long getOrderNumByTime(Long driverId, String startTime, String endtime) {
-
-        return orderInfoMapper.selectCount(new LambdaQueryWrapper<OrderInfo>()
+    public Long getOrderNumByTime(Long driverId, String startTime, String endTime) {
+        Long count = orderInfoMapper.selectCount(new LambdaQueryWrapper<OrderInfo>()
                 .ge(OrderInfo::getStartServiceTime, startTime)
-                .lt(OrderInfo::getEndServiceTime, endtime)
+                .lt(OrderInfo::getStartServiceTime, endTime)
                 .eq(OrderInfo::getDriverId, driverId)
         );
+        log.info("Driver {} 的订单数：{}", driverId, count);
+        return count;
     }
+
 
     @Override
     public Boolean endDrive(UpdateOrderBillForm updateOrderBillForm) {
@@ -349,6 +350,52 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
         pageVo.setLimit(limit);
 
         return pageVo;
+    }
+
+    @Override
+    public OrderBillVo getOrderBillInfo(Long orderId) {
+
+        OrderBill orderBill = orderBillMapper.selectOne(new LambdaQueryWrapper<OrderBill>().eq(OrderBill::getOrderId, orderId));
+        OrderBillVo orderBillVo = new OrderBillVo();
+        BeanUtils.copyProperties(orderBill, orderBillVo);
+
+        return orderBillVo;
+    }
+
+    @Override
+    public OrderProfitsharingVo getOrderProfitsharing(Long orderId) {
+        OrderProfitsharing orderProfitsharing =
+                orderProfitsharingMapper.selectOne(new LambdaQueryWrapper<OrderProfitsharing>().eq(OrderProfitsharing::getOrderId, orderId));
+        OrderProfitsharingVo orderProfitsharingVo = new OrderProfitsharingVo();
+        BeanUtils.copyProperties(orderProfitsharing, orderProfitsharingVo);
+        return orderProfitsharingVo;
+    }
+
+    @Override
+    public Boolean sentOrderBillInfo(Long orderId, Long driverId) {
+
+        int rows = orderInfoMapper.update(null, new LambdaUpdateWrapper<OrderInfo>()
+                .eq(OrderInfo::getId, orderId)
+                .eq(OrderInfo::getDriverId, driverId)
+                .eq(OrderInfo::getStatus, 6)
+                .set(OrderInfo::getStatus, OrderStatus.UNPAID.getStatus())
+        );
+
+        if (rows == 1) {
+            this.log(orderId, OrderStatus.UNPAID.getStatus());
+        } else {
+            throw new GuiguException(ResultCodeEnum.UPDATE_ERROR);
+        }
+        return true;
+    }
+
+    @Override
+    public OrderPayVo getOrderPayVo(String orderNo, Long customerId) {
+        OrderPayVo orderPayVo = orderInfoMapper.selectOrderPayVo(orderNo, customerId);
+        if (orderPayVo != null) {
+            orderPayVo.setContent(orderPayVo.getStartLocation() + " 到 " +  orderPayVo.getEndLocation());
+        }
+        return orderPayVo;
     }
 
 

@@ -63,7 +63,7 @@ public class CiServiceImpl implements CiService {
         //2.1.1设置请求内容,文本内容的Base64编码
         byte[] encoder = Base64.encodeBase64(content.getBytes());
         String contentBase64 = new String(encoder);
-        request.getInput().setContent("Base64Str");
+        request.getInput().setContent(contentBase64);
         request.getConf().setDetectType("all");
 
         //3.调用接口,获取任务响应对象

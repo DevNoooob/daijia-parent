@@ -17,7 +17,7 @@ public class PaymentInfoForm {
     @Schema(description = "订单号")
     private String orderNo;
 
-    @Schema(description = "付款方式：1-微信")
+    @Schema(description = "付款方式：1101-微信")
     private Integer payWay;
 
     @Schema(description = "支付金额")

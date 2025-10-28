@@ -28,31 +28,39 @@ public class FileServiceImpl implements FileService {
     @Override
     public String upload(MultipartFile file) {
         try {
+            if (file == null || file.isEmpty()) {
+                throw new GuiguException(ResultCodeEnum.DATA_ERROR.getCode(), "上传文件为空");
+            }
+
             MinioClient minioClient = MinioClient.builder()
                     .endpoint(minioProperties.getEndpointUrl())
                     .credentials(minioProperties.getAccessKey(), minioProperties.getSecretKey())
                     .build();
 
-            boolean found = minioClient.bucketExists(BucketExistsArgs.builder().bucket(minioProperties.getBucketName()).build());
-            if (!found) {
+            if (!minioClient.bucketExists(BucketExistsArgs.builder().bucket(minioProperties.getBucketName()).build())) {
                 minioClient.makeBucket(MakeBucketArgs.builder().bucket(minioProperties.getBucketName()).build());
-            } else {
-                System.out.println("Bucket daijia already exists");
             }
-            // 设置存储对象名称
-            String extFileName = file.getOriginalFilename().substring(file.getOriginalFilename().lastIndexOf("."));
-            String fileName = new SimpleDateFormat("yyyyMMdd")
-                    .format(new Date()) + "/" + UUID.randomUUID().toString().replace("-" , "") + "." + extFileName;
-            PutObjectArgs putObjectArgs = PutObjectArgs.builder()
-                    .bucket(minioProperties.getBucketName())
-                    .stream(file.getInputStream(), file.getSize(), -1)
-                    .object(fileName)
-                    .build();
-            minioClient.putObject(putObjectArgs) ;
 
-            return minioProperties.getEndpointUrl() + "/" + minioProperties.getBucketName() + "/" + fileName ;
+            String originalName = file.getOriginalFilename();
+            String ext = originalName.substring(originalName.lastIndexOf('.') + 1);
+            String fileName = new SimpleDateFormat("yyyyMMdd").format(new Date()) + "/"
+                    + UUID.randomUUID().toString().replace("-", "") + "." + ext;
+
+            minioClient.putObject(PutObjectArgs.builder()
+                    .bucket(minioProperties.getBucketName())
+                    .object(fileName)
+                    .stream(file.getInputStream(), file.getSize(), -1)
+                    .contentType(file.getContentType())
+                    .build());
+
+            String url = minioProperties.getEndpointUrl() + "/" + minioProperties.getBucketName() + "/" + fileName;
+            log.info("文件上传成功: {}", url);
+            return url;
+
         } catch (Exception e) {
-            throw new GuiguException(ResultCodeEnum.DATA_ERROR);
+            log.error("文件上传失败: {}", e.getMessage(), e);
+            throw new GuiguException(ResultCodeEnum.DATA_ERROR.getCode(), "上传失败：" + e.getMessage());
         }
     }
+
 }
