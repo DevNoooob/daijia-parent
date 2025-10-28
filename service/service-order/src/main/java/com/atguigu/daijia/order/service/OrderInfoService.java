@@ -5,6 +5,7 @@ import com.atguigu.daijia.model.form.order.OrderInfoForm;
 import com.atguigu.daijia.model.form.order.StartDriveForm;
 import com.atguigu.daijia.model.form.order.UpdateOrderBillForm;
 import com.atguigu.daijia.model.form.order.UpdateOrderCartForm;
+import com.atguigu.daijia.model.vo.base.PageVo;
 import com.atguigu.daijia.model.vo.order.CurrentOrderInfoVo;
 import com.baomidou.mybatisplus.extension.service.IService;
 
@@ -41,4 +42,8 @@ public interface OrderInfoService extends IService<OrderInfo> {
     Long getOrderNumByTime(Long driverId, String startTime, String endtime);
 
     Boolean endDrive(UpdateOrderBillForm updateOrderBillForm);
+
+    PageVo findCustomerOrderPage(Long customerId, Long page, Long limit);
+
+    PageVo findDriverOrderPage(Long driverId, Long page, Long limit);
 }

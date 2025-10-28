@@ -9,6 +9,7 @@ import com.atguigu.daijia.model.form.map.CalculateDrivingLineForm;
 import com.atguigu.daijia.model.form.order.OrderFeeForm;
 import com.atguigu.daijia.model.form.order.StartDriveForm;
 import com.atguigu.daijia.model.form.order.UpdateOrderCartForm;
+import com.atguigu.daijia.model.vo.base.PageVo;
 import com.atguigu.daijia.model.vo.map.DrivingLineVo;
 import com.atguigu.daijia.model.vo.order.CurrentOrderInfoVo;
 import com.atguigu.daijia.model.vo.order.NewOrderDataVo;
@@ -110,6 +111,14 @@ public class OrderController {
         Long driverId = AuthContextHolder.getUserId();
         orderFeeForm.setDriverId(driverId);
         return Result.ok(orderService.endDrive(orderFeeForm));
+    }
+
+    @Operation(summary = "司机获取订单分页信息")
+    @MaYueLogin
+    @GetMapping("/findDriverOrderPage/{page}/{limit}")
+    public Result<PageVo> findDriverOrderPage(@PathVariable("page") Long page, @PathVariable("limit") Long limit){
+        Long driverId = AuthContextHolder.getUserId();
+        return Result.ok(orderService.findDriverOrderPage(driverId, page, limit));
     }
 }
 

@@ -1,11 +1,41 @@
-<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper
-PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN"
-"http://ibatis.apache.org/dtd/ibatis-3-mapper.dtd">
-
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
 <mapper namespace="com.atguigu.daijia.order.mapper.OrderInfoMapper">
 
 
+    <select id="selectCustomerOrderPage"
+            resultType="com.atguigu.daijia.model.vo.order.OrderListVo">
+        SELECT
+            info.id,
+            info.order_no,
+            info.start_location,
+            info.end_location,
+            IF(info.status &lt; 7, info.expect_amount, bill.pay_amount) AS amount,
+            info.status,
+            info.create_time
+        FROM daijia_order.order_info info
+                LEFT JOIN daijia_order.order_bill bill
+                        ON info.id = bill.order_id
+        WHERE info.customer_id = #{customerId}
+            AND info.is_deleted = 0
+        ORDER BY info.create_time DESC
+    </select>
+    <select id="selectDriverOrderPage"
+            resultType="com.atguigu.daijia.model.vo.order.OrderListVo">
+        SELECT
+            info.id,
+            info.order_no,
+            info.start_location,
+            info.end_location,
+            IF(info.status &lt; 7, info.expect_amount, info.real_amount) AS amount,
+            info.status,
+            info.create_time
+        FROM daijia_order.order_info info
+        WHERE info.driver_id = #{driverId}
+          AND info.is_deleted = 0
+        ORDER BY info.create_time DESC
+    </select>
 </mapper>
-

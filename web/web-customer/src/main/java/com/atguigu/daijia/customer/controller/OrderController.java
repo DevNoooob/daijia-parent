@@ -8,6 +8,7 @@ import com.atguigu.daijia.model.entity.order.OrderInfo;
 import com.atguigu.daijia.model.form.customer.ExpectOrderForm;
 import com.atguigu.daijia.model.form.customer.SubmitOrderForm;
 import com.atguigu.daijia.model.form.map.CalculateDrivingLineForm;
+import com.atguigu.daijia.model.vo.base.PageVo;
 import com.atguigu.daijia.model.vo.customer.ExpectOrderVo;
 import com.atguigu.daijia.model.vo.driver.DriverInfoVo;
 import com.atguigu.daijia.model.vo.map.DrivingLineVo;
@@ -98,6 +99,14 @@ public class OrderController {
     @GetMapping("/getOrderServiceLastLocation/{orderId}")
     public Result<OrderServiceLastLocationVo> getOrderServiceLastLocation(@PathVariable("orderId") Long orderId) {
         return Result.ok(orderService.getOrderServiceLastLocation(orderId));
+    }
+
+    @Operation(summary = "获取乘客订单分页列表")
+    @MaYueLogin
+    @GetMapping("/findCustomerOrderPage/{page}/{limit}")
+    public Result<PageVo> findCustomerOrderPage(@PathVariable("page") Long page, @PathVariable("limit") Long limit) {
+        Long customerId = AuthContextHolder.getUserId();
+        return Result.ok(orderService.findCustomerOrderPage(customerId, page, limit));
     }
 }
 
