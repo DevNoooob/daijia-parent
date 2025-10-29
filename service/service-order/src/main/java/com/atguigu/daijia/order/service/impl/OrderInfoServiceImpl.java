@@ -32,6 +32,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Date;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -331,7 +332,7 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
     public PageVo findCustomerOrderPage(Long customerId, Long page, Long limit) {
 
         Page<OrderInfo> pageParam = new Page<>(page, limit);
-        IPage<OrderListVo> orderListVoIPage = orderInfoMapper.selectCustomerOrderPage(pageParam,customerId);
+        IPage<OrderListVo> orderListVoIPage = orderInfoMapper.selectCustomerOrderPage(pageParam, customerId);
 
         PageVo pageVo = new PageVo<>(orderListVoIPage.getRecords(), orderListVoIPage.getPages(), orderListVoIPage.getTotal());
         pageVo.setPage(page);
@@ -343,7 +344,7 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
     @Override
     public PageVo findDriverOrderPage(Long driverId, Long page, Long limit) {
         Page<OrderInfo> pageParam = new Page<>(page, limit);
-        IPage<OrderListVo> orderListVoIPage = orderInfoMapper.selectDriverOrderPage(pageParam,driverId);
+        IPage<OrderListVo> orderListVoIPage = orderInfoMapper.selectDriverOrderPage(pageParam, driverId);
 
         PageVo pageVo = new PageVo<>(orderListVoIPage.getRecords(), orderListVoIPage.getPages(), orderListVoIPage.getTotal());
         pageVo.setPage(page);
@@ -393,9 +394,51 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
     public OrderPayVo getOrderPayVo(String orderNo, Long customerId) {
         OrderPayVo orderPayVo = orderInfoMapper.selectOrderPayVo(orderNo, customerId);
         if (orderPayVo != null) {
-            orderPayVo.setContent(orderPayVo.getStartLocation() + " 到 " +  orderPayVo.getEndLocation());
+            orderPayVo.setContent(orderPayVo.getStartLocation() + " 到 " + orderPayVo.getEndLocation());
         }
         return orderPayVo;
+    }
+
+    @Override
+    public Boolean updateOrderPayStatus(String orderNo) {
+        //1、根据订单编号查询，判断订单状态
+        OrderInfo orderInfo = orderInfoMapper.selectOne(new LambdaQueryWrapper<OrderInfo>().eq(OrderInfo::getOrderNo, orderNo));
+        if (orderInfo == null || Objects.equals(orderInfo.getStatus(), OrderStatus.PAID.getStatus())) {
+            return true;
+        }
+
+        int rows = orderInfoMapper.update(null, new LambdaUpdateWrapper<OrderInfo>()
+                .eq(OrderInfo::getOrderNo, orderNo)
+                .set(OrderInfo::getStatus, OrderStatus.PAID.getStatus())
+                .set(OrderInfo::getPayTime, new Date())
+        );
+
+        if (rows == 1) {
+            return true;
+        } else {
+            throw new GuiguException(ResultCodeEnum.UPDATE_ERROR);
+        }
+    }
+
+    @Override
+    public OrderRewardVo getOrderRewardFee(String orderNo) {
+        OrderInfo orderInfo =
+                orderInfoMapper.selectOne(new LambdaQueryWrapper<OrderInfo>()
+                        .eq(OrderInfo::getOrderNo, orderNo)
+                        .select(OrderInfo::getId, OrderInfo::getDriverId)
+                );
+        OrderBill orderBill =
+                orderBillMapper.selectOne(new LambdaQueryWrapper<OrderBill>()
+                        .eq(OrderBill::getOrderId, orderInfo.getId())
+                        .select(OrderBill::getRewardFee)
+                );
+
+        OrderRewardVo orderRewardVo = new OrderRewardVo();
+        orderRewardVo.setOrderId(orderInfo.getId());
+        orderRewardVo.setDriverId(orderInfo.getDriverId());
+        orderRewardVo.setRewardFee(orderBill.getRewardFee());
+
+        return orderRewardVo;
     }
 
 

@@ -7,10 +7,7 @@ import com.atguigu.daijia.model.form.order.StartDriveForm;
 import com.atguigu.daijia.model.form.order.UpdateOrderBillForm;
 import com.atguigu.daijia.model.form.order.UpdateOrderCartForm;
 import com.atguigu.daijia.model.vo.base.PageVo;
-import com.atguigu.daijia.model.vo.order.CurrentOrderInfoVo;
-import com.atguigu.daijia.model.vo.order.OrderBillVo;
-import com.atguigu.daijia.model.vo.order.OrderPayVo;
-import com.atguigu.daijia.model.vo.order.OrderProfitsharingVo;
+import com.atguigu.daijia.model.vo.order.*;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -23,6 +20,7 @@ public interface OrderInfoFeignClient {
 
     /**
      * 保存订单信息
+     *
      * @param orderInfoForm
      * @return
      */
@@ -31,6 +29,7 @@ public interface OrderInfoFeignClient {
 
     /**
      * 获取订单信息
+     *
      * @param orderId
      * @return
      */
@@ -39,6 +38,7 @@ public interface OrderInfoFeignClient {
 
     /**
      * 司机抢单
+     *
      * @param driverId
      * @param orderId
      * @return
@@ -48,6 +48,7 @@ public interface OrderInfoFeignClient {
 
     /**
      * 查找乘客当前订单
+     *
      * @param customerId
      * @return
      */
@@ -56,6 +57,7 @@ public interface OrderInfoFeignClient {
 
     /**
      * 查找司机当前订单
+     *
      * @param driverId
      * @return
      */
@@ -64,6 +66,7 @@ public interface OrderInfoFeignClient {
 
     /**
      * 根据订单id获取详细订单信息
+     *
      * @param orderId
      * @return
      */
@@ -72,6 +75,7 @@ public interface OrderInfoFeignClient {
 
     /**
      * 司机到达起始点，更新订单状态
+     *
      * @param orderId
      * @param driverId
      * @return
@@ -82,6 +86,7 @@ public interface OrderInfoFeignClient {
 
     /**
      * 更新代驾车辆信息
+     *
      * @param updateOrderCartForm
      * @return
      */
@@ -90,6 +95,7 @@ public interface OrderInfoFeignClient {
 
     /**
      * 司机开始代驾服务
+     *
      * @param startDriveForm
      * @return
      */
@@ -98,6 +104,7 @@ public interface OrderInfoFeignClient {
 
     /**
      * 根据时间段获取订单数
+     *
      * @param driverId
      * @param startTime
      * @param endtime
@@ -110,6 +117,7 @@ public interface OrderInfoFeignClient {
 
     /**
      * 司机结束代驾服务
+     *
      * @param updateOrderBillForm
      * @return
      */
@@ -118,6 +126,7 @@ public interface OrderInfoFeignClient {
 
     /**
      * 乘客获取订单分页信息
+     *
      * @param customerId
      * @param page
      * @param limit
@@ -130,6 +139,7 @@ public interface OrderInfoFeignClient {
 
     /**
      * 司机获取订单分页信息
+     *
      * @param driverId
      * @param page
      * @param limit
@@ -137,11 +147,12 @@ public interface OrderInfoFeignClient {
      */
     @GetMapping("/order/info/findCustomerOrderPage/{driverId}/{page}/{limit}")
     Result<PageVo> findDriverOrderPage(@PathVariable("driverId") Long driverId,
-                                         @PathVariable("page") Long page,
-                                         @PathVariable("limit") Long limit);
+                                       @PathVariable("page") Long page,
+                                       @PathVariable("limit") Long limit);
 
     /**
      * 根据订单id获取实际账单信息
+     *
      * @param orderId
      * @return
      */
@@ -150,6 +161,7 @@ public interface OrderInfoFeignClient {
 
     /**
      * 根据订单id获取实际分账信息
+     *
      * @param orderId
      * @return
      */
@@ -158,6 +170,7 @@ public interface OrderInfoFeignClient {
 
     /**
      * 司机发送账单信息
+     *
      * @param orderId
      * @param driverId
      * @return
@@ -165,7 +178,31 @@ public interface OrderInfoFeignClient {
     @GetMapping("/order/info/sendOrderBillInfo/{orderId}/{driverId}")
     Result<Boolean> sendOrderBillInfo(@PathVariable("orderId") Long orderId, @PathVariable("driverId") Long driverId);
 
+    /**
+     * 乘客获取账单信息
+     *
+     * @param orderNo
+     * @param customerId
+     * @return
+     */
     @GetMapping("/order/info/getOrderPayVo/{orderNo}/{customerId}")
     Result<OrderPayVo> getOrderPayVo(@PathVariable("orderNo") String orderNo, @PathVariable("customerId") Long customerId);
 
+    /**
+     * 根据订单编号，修改支付状态
+     *
+     * @param orderNo
+     * @return
+     */
+    @GetMapping("/order/info/updateOrderPayStatus/{orderNo}")
+    Result<Boolean> updateOrderPayStatus(@PathVariable("orderNo") String orderNo);
+
+    /**
+     * 根据订单编号，得到系统奖励
+     *
+     * @param orderNo
+     * @return
+     */
+    @GetMapping("/order/info/getOrderRewardFee/{orderNo}")
+    Result<OrderRewardVo> getOrderRewardFee(@PathVariable("orderNo") String orderNo);
 }

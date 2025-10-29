@@ -118,7 +118,13 @@ public class OrderController {
         Long customerId = AuthContextHolder.getUserId();
         createWxPaymentForm.setCustomerId(customerId);
         return Result.ok(orderService.createWxPayment(createWxPaymentForm));
+    }
 
+    @Operation(summary = "支付状态查询")
+    @MaYueLogin
+    @GetMapping("/queryPayStatus/{orderNo}")
+    public Result<Boolean> queryPayStatus(@PathVariable("orderNo") String orderNo) {
+        return Result.ok(orderService.queryPayStatus(orderNo));
     }
 }
 
