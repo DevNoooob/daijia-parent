@@ -3,6 +3,7 @@ package com.atguigu.daijia.customer.service.impl;
 import com.atguigu.daijia.common.execption.GuiguException;
 import com.atguigu.daijia.common.result.Result;
 import com.atguigu.daijia.common.result.ResultCodeEnum;
+import com.atguigu.daijia.coupon.client.CouponFeignClient;
 import com.atguigu.daijia.customer.client.CustomerInfoFeignClient;
 import com.atguigu.daijia.customer.service.OrderService;
 import com.atguigu.daijia.dispatch.client.NewOrderFeignClient;
@@ -12,6 +13,7 @@ import com.atguigu.daijia.map.client.MapFeignClient;
 import com.atguigu.daijia.map.client.WxPayFeignClient;
 import com.atguigu.daijia.model.entity.order.OrderInfo;
 import com.atguigu.daijia.model.enums.OrderStatus;
+import com.atguigu.daijia.model.form.coupon.UseCouponForm;
 import com.atguigu.daijia.model.form.customer.ExpectOrderForm;
 import com.atguigu.daijia.model.form.customer.SubmitOrderForm;
 import com.atguigu.daijia.model.form.map.CalculateDrivingLineForm;
@@ -34,11 +36,13 @@ import com.atguigu.daijia.model.vo.payment.WxPrepayVo;
 import com.atguigu.daijia.model.vo.rules.FeeRuleResponseVo;
 import com.atguigu.daijia.order.client.OrderInfoFeignClient;
 import com.atguigu.daijia.rules.client.FeeRuleFeignClient;
+import io.seata.spring.annotation.GlobalTransactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.Date;
 import java.util.Objects;
 
@@ -69,6 +73,9 @@ public class OrderServiceImpl implements OrderService {
 
     @Autowired
     private WxPayFeignClient wxPayFeignClient;
+
+    @Autowired
+    private CouponFeignClient couponFeignClient;
 
     @Override
     public ExpectOrderVo expectOrder(ExpectOrderForm expectOrderForm) {
@@ -209,6 +216,7 @@ public class OrderServiceImpl implements OrderService {
         return orderInfoFeignClient.findCustomerOrderPage(customerId, page, limit).getData();
     }
 
+    @GlobalTransactional
     @Override
     public WxPrepayVo createWxPayment(CreateWxPaymentForm createWxPaymentForm) {
         //1、获取订单支付信息
@@ -223,13 +231,35 @@ public class OrderServiceImpl implements OrderService {
         String customerOpenId = customerInfoFeignClient.getCustomerOpenId(orderPayVo.getCustomerId()).getData();
         String driverOpenId = driverInfoFeignClient.getDriverOpenId(orderPayVo.getDriverId()).getData();
 
+        //处理优惠券
+        BigDecimal couponAmount = null;
+        if (null == orderPayVo.getCouponAmount()
+                && null != createWxPaymentForm.getCustomerCouponId()
+                && createWxPaymentForm.getCustomerCouponId() != 0
+        ) {
+            UseCouponForm useCouponForm = new UseCouponForm();
+            useCouponForm.setOrderId(orderPayVo.getOrderId());
+            useCouponForm.setCustomerId(createWxPaymentForm.getCustomerId());
+            useCouponForm.setCustomerCouponId(createWxPaymentForm.getCustomerCouponId());
+            useCouponForm.setOrderAmount(orderPayVo.getPayAmount());
+            couponAmount = couponFeignClient.useCoupon(useCouponForm).getData();
+        }
+
+        //更新订单的支付金额
+        BigDecimal payAmount = orderPayVo.getPayAmount();
+        if (couponAmount != null) {
+            orderInfoFeignClient.updateCouponAmount(orderPayVo.getOrderId(), couponAmount);
+            payAmount = payAmount.subtract(couponAmount);
+        }
+
+
         //3、封装数据到实体类，远程调用发起微信支付
         PaymentInfoForm paymentInfoForm = new PaymentInfoForm();
         paymentInfoForm.setOrderNo(createWxPaymentForm.getOrderNo());
         paymentInfoForm.setCustomerOpenId(customerOpenId);
         paymentInfoForm.setDriverOpenId(driverOpenId);
-        paymentInfoForm.setAmount(orderPayVo.getPayAmount());
-//        paymentInfoForm.setAmount(orderPayVo.getPayAmount().subtract(orderPayVo.getCouponAmount()));
+        paymentInfoForm.setAmount(payAmount);
+
         paymentInfoForm.setPayWay(1001);
 
         return wxPayFeignClient.createWxPayment(paymentInfoForm).getData();

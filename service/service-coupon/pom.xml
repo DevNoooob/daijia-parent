@@ -14,6 +14,11 @@
     <version>1.0</version>
 
     <dependencies>
+        <dependency>
+            <groupId>com.atguigu.daijia</groupId>
+            <artifactId>service-util</artifactId>
+            <version>1.0</version>
+        </dependency>
     </dependencies>
 
     <build>

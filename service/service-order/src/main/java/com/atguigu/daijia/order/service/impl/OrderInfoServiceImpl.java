@@ -23,14 +23,14 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.extern.slf4j.Slf4j;
-import org.redisson.api.RLock;
-import org.redisson.api.RedissonClient;
+import org.redisson.api.*;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.Date;
 import java.util.Objects;
 import java.util.UUID;
@@ -75,6 +75,9 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
         orderInfo.setStatus(OrderStatus.WAITING_ACCEPT.getStatus());
         orderInfoMapper.insert(orderInfo);
 
+        //生成订单之后，发送延迟消息
+        this.sendDelayMessage(orderInfo.getId());
+
         //记录日志
         this.log(orderInfo.getId(), orderInfo.getStatus());
 
@@ -83,6 +86,22 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
                 "0", RedisConstant.ORDER_ACCEPT_MARK_EXPIRES_TIME, TimeUnit.MINUTES);
 
         return orderInfo.getId();
+    }
+
+    private void sendDelayMessage(Long orderId) {
+        try {
+            //1、创建一个队列
+            RBlockingQueue<Object> blockingQueue =
+                    redissonClient.getBlockingQueue("queue_cancel");
+            //2、把创建的队列放到延迟队列
+            RDelayedQueue<Object> delayedQueue =
+                    redissonClient.getDelayedQueue(blockingQueue);
+            //3、发送消息到延迟队列，并且设置超时时间
+            delayedQueue.offer(orderId.toString(), 15, TimeUnit.MINUTES);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new GuiguException(ResultCodeEnum.DATA_ERROR);
+        }
     }
 
     @Override
@@ -439,6 +458,29 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
         orderRewardVo.setRewardFee(orderBill.getRewardFee());
 
         return orderRewardVo;
+    }
+
+    @Override
+    public void orderCancel(long orderId) {
+        //orderId查询订单信息
+        OrderInfo orderInfo =
+                orderInfoMapper.selectById(orderId);
+        //判断
+        if (orderInfo != null && Objects.equals(orderInfo.getStatus(), OrderStatus.WAITING_ACCEPT.getStatus())) {
+            //修改订单状态
+            orderInfo.setStatus(OrderStatus.CANCEL_ORDER.getStatus());
+            int rows = orderInfoMapper.updateById(orderInfo);
+            if (rows == 1) {
+                //删除接单标识
+                redisTemplate.delete(RedisConstant.ORDER_ACCEPT_MARK +  orderId);
+            }
+        }
+    }
+
+    @Override
+    public Boolean updateCouponAmount(Long orderId, BigDecimal couponAmount) {
+        orderBillMapper.updateCouponAmount(orderId, couponAmount);
+        return true;
     }
 
 
